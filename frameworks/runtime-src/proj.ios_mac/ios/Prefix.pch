@@ -1,0 +1,8 @@
+//
+// Prefix header for all source files of the 'Protect_Mermaid' target in the 'Protect_Mermaid' project
+//
+
+#ifdef __OBJC__
+	#import <Foundation/Foundation.h>
+	#import <UIKit/UIKit.h>
+#endif
