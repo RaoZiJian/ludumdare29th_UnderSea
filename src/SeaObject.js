@@ -18,38 +18,53 @@ var FishActor = SeaObject.extend({
 
     ctor:function(){
 
-        this._super();
+        var randomPng = Math.random();
+        if(randomPng>0.5){
+            this._super(res.fish_one_png);
+        }else{
+            this._super(res.fish_two_png);
+        }
         this.id=0;
+        this.scale=0.5;
 
         this.speedX = Math.random()*2+1;
         this.speedY = Math.random()*2+1;
 
-        var fishFrames = [];
-        fishFrames.push(cc.SpriteFrame.create(res.fish_one_png, cc.rect(0,0,50,52)));
-        fishFrames.push(cc.SpriteFrame.create(res.fish_two_png,cc.rect(0,0,50,43)));
-
-        var animation = cc.Animation.create(fishFrames,0.3);
-        var animate = cc.Animate.create(animation);
-        this.runAction(cc.RepeatForever.create(animate));
-        this.activateFishMovement();
+         this.activateFishMovement();
     },
 
     activateFishMovement:function(){
 
-        this.schedule(this.updateFishMovement, 0.1+Math.random());
+        this.schedule(this.updateFishMovement, 1+Math.random()*4);
     },
 
     updateFishMovement:function(dt){
 
-        var direction = Math.random()*2-1;
-        var shiftX = (Math.random()*2+1)*direction;
-        var shiftY = (Math.random()*2+1)*direction;
+        var shiftX = (Math.random()+0.5)*(Math.random()*2-1);
+        var shiftY = (Math.random()+0.5)*(Math.random()*2-1);
 
         this.speedX = shiftX==0?1:shiftX;
-        this.speedY = shiftY==0?1:shiftY;
+        this.speedY = shiftY==0?-1:shiftY;
 
-        var rotation = -Math.atan2(shiftX,shiftY);
-        this.rotation = (rotation*180/3.14);
+        var rotation;
+
+        if(shiftX>0&&shiftY>0){
+            this.flippedX = false;
+            rotation = -Math.atan2(shiftX,shiftY);
+            this.rotation = (rotation*180/3.14);
+        }else if(shiftX<0&&shiftY>0){
+            this.flippedX = true;
+            rotation = -Math.atan2(shiftX,shiftY);
+            this.rotation = (rotation*180/3.14);
+        }else if(shiftX>0&&shiftY<0){
+            this.flippedX=false;
+            rotation = -Math.atan2(shiftX,shiftY);
+            this.rotation = (rotation*180/3.14+180);
+        }else if(shiftX<0&&shiftY<0){
+            this.flippedX=true;
+            rotation = -Math.atan2(shiftX,shiftY);
+            this.rotation = (rotation*180/3.14+180);
+        }
     }
 });
 
