@@ -12,7 +12,12 @@ var DeepSeaLayer = cc.Layer.extend({
     point:0,
     deleteCoinAry:null,
     coinAry:null,
-    garavity:1,
+    gravity:1,
+    goldLabel:null,
+    carryCoinsLabel:null,
+    carryCoins:0,
+    carryPoints:0,
+    deadFishType:null,
 
     ctor:function(){
 
@@ -22,6 +27,31 @@ var DeepSeaLayer = cc.Layer.extend({
         this.coinAry=[];
         this.deleteCoinAry=[];
         this.keyCodeFlag=0;
+
+        var clouds = new cc.Sprite(res.clouds_png);
+        clouds.x=0;
+        clouds.y=0;
+        clouds.anchorX=0;
+        clouds.anchorY=0;
+        var cloudsAct = cc.MoveBy.create(180,cc.p(500,0));
+        clouds.runAction(cc.Sequence.create(cloudsAct,cloudsAct.reverse()));
+        this.addChild(clouds,1);
+
+        this.goldLabel = cc.LabelTTF.create("Gold: 0");
+        this.goldLabel.fontSize=30;
+        this.goldLabel.color= new cc.color(184,148,20,255);
+        this.goldLabel.x = 40;
+        this.goldLabel.y = 700;
+        this.goldLabel.setAnchorPoint(0,0.5);
+        this.addChild(this.goldLabel,2);
+
+        this.carryCoinsLabel = cc.LabelTTF.create("Carried Coins: 0");
+        this.carryCoinsLabel.fontSize=30;
+        this.carryCoinsLabel.color= new cc.color(184,148,20,255);
+        this.carryCoinsLabel.x = 40;
+        this.carryCoinsLabel.y = 670;
+        this.carryCoinsLabel.setAnchorPoint(0,0.5);
+        this.addChild(this.carryCoinsLabel,2);
 
         this.diverInit();
         this.fishActorsInitial();
@@ -40,16 +70,20 @@ var DeepSeaLayer = cc.Layer.extend({
                 var target = event.getCurrentTarget().diver;
                 if(key == 87){//w
 
+                    cc.audioEngine.playEffect(res.move_ogg);
                     event.getCurrentTarget().keyCodeFlag=87;
                 }else if(key == 65){//a
 
+                    cc.audioEngine.playEffect(res.move_ogg);
                     event.getCurrentTarget().diver.flippedX = false;
                     event.getCurrentTarget().keyCodeFlag=65;
                 }else if(key == 83){//s
 
+                    cc.audioEngine.playEffect(res.move_ogg);
                     event.getCurrentTarget().keyCodeFlag=83;
                 }else if(key == 68){//d
 
+                    cc.audioEngine.playEffect(res.move_ogg);
                     event.getCurrentTarget().diver.flippedX = true;
                     event.getCurrentTarget().keyCodeFlag=68;
                 }else{
@@ -68,18 +102,29 @@ var DeepSeaLayer = cc.Layer.extend({
         this.shipUpdateMovement();
         this.controlDiver();
         this.updateFishMovementPerFrame();
-     },
+        this.collideCheck();
+    },
 
     fishActorsInitial:function(){
 
-        for (var i=0;i<20;i++){
+        var fishKind1Batch = cc.SpriteBatchNode.create(res.fish_one_png,25);
+        var fishKind2Batch = cc.SpriteBatchNode.create(res.fish_two_png,25);
+
+        for (var i=0;i<25;i++){
 
             var fish = new FishActor();
             fish.x=Math.random()*1020+1;
             fish.y=Math.random()*100+1;
-            this.addChild(fish,1);
+
+            if(fish.kind==1){
+                fishKind1Batch.addChild(fish);
+            }else{
+                fishKind2Batch.addChild(fish);
+            }
             this.fishAry.push(fish);
         }
+        this.addChild(fishKind1Batch,1);
+        this.addChild(fishKind2Batch,1);
     },
 
     updateFishMovementPerFrame:function(){
@@ -155,8 +200,6 @@ var DeepSeaLayer = cc.Layer.extend({
                 fish.y+=fish.speedY;
             }
         }
-
-        this.collideCheck();
     },
 
     updateFishMovementOnce:function(){
@@ -196,22 +239,22 @@ var DeepSeaLayer = cc.Layer.extend({
         switch(this.keyCodeFlag){
             case 87:{
                 if(this.diver.y<=500)
-                    this.diver.y+=5*this.garavity;
+                    this.diver.y+=5*this.gravity;
                 break;
             }
             case 65:{
                 if(this.diver.x>=10)
-                    this.diver.x-=5*this.garavity;
+                    this.diver.x-=5*this.gravity;
                 break;
             }
             case 83:{
                 if(this.diver.y>=50)
-                    this.diver.y-=5*this.garavity;
+                    this.diver.y-=5*this.gravity;
                 break;
             }
             case 68:{
                 if(this.diver.x<=1000)
-                    this.diver.x+=5*this.garavity;
+                    this.diver.x+=5*this.gravity;
                 break;
             }
             default: {
@@ -333,13 +376,21 @@ var DeepSeaLayer = cc.Layer.extend({
         coin.removeFromParent();
     },
 
+    stopUpdate:function(){
+
+        this.getParent().gameOverLayerInit(this.deadFishType);
+        this.onExit();
+    },
+
     collideCheck:function(){
 
         for(var i=0;i<this.fishAry.length;i++){
 
-            if(cc.rectIntersectsRect(cc.rect(this.diver.x,this.diver.y,50,20),cc.rect(this.fishAry[i].x,this.fishAry[i].y,20,20))){
+            if(cc.rectIntersectsRect(cc.rect(this.diver.x,this.diver.y,65,20),cc.rect(this.fishAry[i].x,this.fishAry[i].y,20,20))){
 
-                this.onExit();
+                cc.audioEngine.playEffect(res.death_ogg);
+                this.deadFishType=this.fishAry[i].kind;
+                this.diver.runAction(cc.Sequence.create(cc.MoveBy.create(3, cc.p(0,-700)),cc.CallFunc.create(this.stopUpdate,this)));
             }
         }
 
@@ -347,7 +398,17 @@ var DeepSeaLayer = cc.Layer.extend({
 
             if(cc.rectIntersectsRect(cc.rect(this.diver.x,this.diver.y,100,50),cc.rect(this.coinAry[i].x,this.coinAry[i].y,20,20))){
 
-               this.deleteCoinAry.push(this.coinAry[i]);
+                cc.audioEngine.playEffect(res.coinEffect_ogg);
+                this.carryCoins++;
+                this.carryPoints += parseInt((this.coinAry[i].scale*10));
+                this.carryCoinsLabel.string="Carried Coins: " + this.carryCoins;
+                if(this.carryCoins>5&&this.carryCoins<=10){
+                    this.carryCoinsLabel.string="Carried Coins: " + this.carryCoins +" (You are carrying too much!)";
+                }else if(this.carryCoins>10){
+                    this.carryCoinsLabel.string="Carried Coins: " + this.carryCoins +" (Dangerous! Dangerous! Dangerous!)";
+                }
+                this.deleteCoinAry.push(this.coinAry[i]);
+                this.gravity=this.gravity*0.9;
             }
         }
 
@@ -355,6 +416,16 @@ var DeepSeaLayer = cc.Layer.extend({
 
             this.coinAry.splice(this.coinAry.indexOf(this.deleteCoinAry[i]),1);
             this.deleteCoinAry[i].removeFromParent();
+        }
+
+        if(cc.rectIntersectsRect(cc.rect(this.diver.x,this.diver.y,100,50),cc.rect(this.ship.x,this.ship.y,150,125))){
+
+            this.point += this.carryPoints;
+            this.goldLabel.string = "Gold: " + this.point;
+            this.carryPoints=0;
+            this.carryCoins=0;
+            this.gravity=1;
+            this.carryCoinsLabel.string="Carried Coins: 0";
         }
 
         this.deleteCoinAry = [];
@@ -393,6 +464,37 @@ var DeepSeaScene = cc.Scene.extend({
 
         var liquidEffect = cc.Liquid.create(15, cc.size(20,20), 5, 5);
         backgroundSea.runAction(cc.RepeatForever.create(liquidEffect));
+    },
+
+    gameOverLayerInit:function(type){
+
+        var gameOverPng;
+
+        if(type==1)
+            gameOverPng = cc.Sprite.create(res.gameOver1_png);
+        if(type==2)
+            gameOverPng = cc.Sprite.create(res.gameOver2_png);
+
+        gameOverPng.x=0;
+        gameOverPng.y=0;
+        gameOverPng.anchorX=0;
+        gameOverPng.anchorY=0;
+
+        this.addChild(gameOverPng,3);
+
+        var retryBtn = cc.MenuItemImage.create(res.retry_png,res.retryPress_png,this.retryGame);
+        var retryMenu = cc.Menu.create(retryBtn);
+        retryMenu.x=800;
+        retryMenu.y=200;
+        this.addChild(retryMenu,4);
+    },
+
+    retryGame:function(){
+
+        var newScene = new DeepSeaScene();
+        var transition = cc.TransitionFadeBL.create(0.5, newScene);
+
+        cc.director.runScene(transition);
     }
 });
 

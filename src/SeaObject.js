@@ -4,6 +4,7 @@ var SeaObject = cc.Sprite.extend({
     //1:bubbles
     //2:coins
     id:null,
+    kind:null,
 
     ctor:function(res){
 
@@ -21,8 +22,10 @@ var FishActor = SeaObject.extend({
         var randomPng = Math.random();
         if(randomPng>0.5){
             this._super(res.fish_one_png);
+            this.kind=1;
         }else{
             this._super(res.fish_two_png);
+            this.kind=2;
         }
         this.id=0;
         this.scale=0.5;

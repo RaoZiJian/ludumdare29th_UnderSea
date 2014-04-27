@@ -3,7 +3,7 @@ cc.game.onStart = function(){
 	cc.view.resizeWithBrowserSize(true);
     //load resources
     cc.LoaderScene.preload(g_resources, function () {
-        cc.director.runScene(new DeepSeaScene());
+        cc.director.runScene(new startScene());
     }, this);
 };
 cc.game.run();
